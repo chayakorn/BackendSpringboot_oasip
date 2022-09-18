@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     List<User> findAllByName(String name);
     List<User> findAllByEmail(String email);
     User findByEmail(String email);
+    User findByName(String name);
 
     @Query(
             value = "select * from user where name = :name and userId <> :id",

@@ -16,6 +16,5 @@ public class BackendApplication {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return  new Argon2PasswordEncoder(16, 16, 1, 65536, 1);
-//        return NoOpPasswordEncoder.getInstance();
     }
 }

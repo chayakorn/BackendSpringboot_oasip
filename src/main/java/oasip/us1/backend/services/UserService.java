@@ -1,28 +1,42 @@
 package oasip.us1.backend.services;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import oasip.us1.backend.dtos.*;
 import oasip.us1.backend.entities.User;
 import oasip.us1.backend.enums.ROLE;
 import oasip.us1.backend.repositories.UserRepository;
+
 import oasip.us1.backend.utils.ListMapper;
+import org.apache.tomcat.util.http.parser.Authorization;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService {
+public class UserService  implements UserDetailsService{
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -30,6 +44,7 @@ public class UserService {
     @Autowired
     private ListMapper listMapper;
     private Argon2PasswordEncoder encoder = new Argon2PasswordEncoder(16, 16, 1, 65536, 1);
+
 
 
     public ResponseEntity getAllUsers() {
@@ -168,4 +183,26 @@ public class UserService {
                 ((ServletWebRequest) request).getRequest().getRequestURI(), "Matching failed", fieldError);
         return new ResponseEntity(errorBody, HttpStatus.BAD_REQUEST);
     }
+    public User getUser(String email){
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        oasip.us1.backend.entities.User user = userRepository.findByEmail(email);
+        System.out.println(email);
+
+
+        if (!user.equals(null)) {
+            GrantedAuthority grantedAuthority = new SimpleGrantedAuthority(user.getRole().name());
+            ArrayList<GrantedAuthority> role = new ArrayList<>();role.add(grantedAuthority);
+
+            return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(),
+                    role);
+        } else {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+//        return  new User("admin","password",new ArrayList<>());
+    }
+
 }
